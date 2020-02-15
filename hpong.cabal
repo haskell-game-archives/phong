@@ -23,7 +23,7 @@ executable hpong
   build-depends:
     , base       >=4.12 && <4.14
     , FTGL       ^>=2.1
-    , GLFW-b     ^>=3.3
+    , GLFW-b     >=3.2  && <3.4
     , GLURaw     ^>=2.0
     , OpenGLRaw  ^>=3.3
     , text
