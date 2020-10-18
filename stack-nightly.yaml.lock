@@ -13,7 +13,7 @@ packages:
     hackage: FTGL-2.1@sha256:299c20bb73653bf7047e3103375aac800653eb6b0dc9e69aaf3e1ac3180ce8ca,842
 snapshots:
 - completed:
-    size: 532172
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/16/18.yaml
-    sha256: 4f2a092c6f4869854e8d7435ab98ce5157c641022c3cbfc4c4614ff3db752e62
-  original: lts-16.18
+    size: 539714
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2020/10/18.yaml
+    sha256: 244324c856b80dc0ee2f084de73a48a7b1ee24553dabf272fafedc0192dfe8a5
+  original: nightly-2020-10-18
