@@ -2,21 +2,16 @@
 {-# LANGUAGE RecordWildCards   #-}
 module Main where
 
-import Control.Concurrent (threadDelay)
-
 import qualified Graphics.UI.GLFW as GLFW
 import qualified Graphics.Rendering.FTGL as FTGL
 -- import qualified Graphics.UI.GLUT.Fonts as GLUT
 -- everything from here starts with gl or GL
 import Graphics.GL
-import Graphics.GLU ( gluPerspective )
-import Data.Bits ( (.|.) )
-import System.Exit ( exitWith, ExitCode(..) )
-import Control.Monad ( forever )
+import Data.Bits
+import System.Exit
+import Control.Monad
 
 import Data.IORef
-
-import qualified Data.Text.Encoding as T
 
 initGL :: GLFW.Window -> IO ()
 initGL win = do
@@ -43,16 +38,10 @@ resizeScene _   width' height' = do
   glLoadIdentity
   glFlush
 
--- drawScene :: Scene -> GameState -> IO ()
-
 drawMainMenu :: FTGL.Font -> Int -> Int -> GLFW.Window ->  IO ()
 drawMainMenu font width height _ = 
-  drawText font "Hpong" ((((fromIntegral width) / 2) - 20), ((fromIntegral height) - 50)) (1,1,1)
+  drawText font "Hpong" ((fromIntegral width / 2) - 20, fromIntegral height - 50) (1,1,1)
 
-  
-
--- drawGameScene :: IORef GLfloat -> GLfloat -> IORef GLfloat -> IORef GLfloat -> IORef GLfloat -> IORef GLfloat -> IORef GLfloat -> IORef Int -> IORef Int -> Int -> Int -> GLFW.Window ->  IO ()
--- drawGameScene racketLeftYRef racketRightX racketRightYRef ballPosXRef ballPosYRef ballDirXRef ballDirYRef leftScoreRef rightScoreRef width height _ = do
 drawGameScene :: GameState -> GLFW.Window -> IO ()
 drawGameScene GameState{..} _ = do
   -- clear the screen and the depth bufer
@@ -80,83 +69,65 @@ drawGameScene GameState{..} _ = do
   -- collision detection
   
   -- hit by left racket
-  if (ballPosX < racketLeftX + racketWidth &&
-      ballPosX > racketLeftX &&
-      ballPosY < racketLeftY + racketHeight &&
-      ballPosY > racketLeftY)
-      then do
-        writeIORef ballDirXRef (abs ballDirX)
-        writeIORef ballDirYRef (((ballPosY - racketLeftY) / racketHeight) - 0.5)        
-      else return ()
+  when
+    (ballPosX < racketLeftX + racketWidth
+       &&
+         ballPosX > racketLeftX
+           && ballPosY < racketLeftY + racketHeight && ballPosY > racketLeftY)
+    $ do writeIORef ballDirXRef (abs ballDirX)
+         writeIORef
+           ballDirYRef (((ballPosY - racketLeftY) / racketHeight) - 0.5)
   
   -- hit by right racket
-  if (ballPosX > racketRightX &&
-      ballPosX < racketRightX + racketWidth &&
-      ballPosY < racketRightY + racketHeight &&
-      ballPosY > racketRightY)
-      then do
-        writeIORef ballDirXRef (negate (abs ballDirX))
-        writeIORef ballDirYRef (((ballPosY - racketRightY) / racketHeight) - 0.5)        
-      else return ()
+  when
+    (ballPosX > racketRightX
+       &&
+         ballPosX < racketRightX + racketWidth
+           &&
+             ballPosY < racketRightY + racketHeight && ballPosY > racketRightY)
+    $ do writeIORef ballDirXRef (negate (abs ballDirX))
+         writeIORef
+           ballDirYRef (((ballPosY - racketRightY) / racketHeight) - 0.5)
   
   -- hit left wall
-  if ballPosX < 0 
-    then do
-      -- add score_right
-      modifyIORef rightScoreRef (+ 1)
-      writeIORef ballPosXRef ((fromIntegral width) / 2)
-      writeIORef ballPosYRef ((fromIntegral height) / 2)
-      writeIORef ballDirXRef (abs ballDirX)
-      writeIORef ballDirYRef 0 
-    else return ()
+  when (ballPosX < 0)
+    $ do modifyIORef rightScoreRef (+ 1)
+         writeIORef ballPosXRef (fromIntegral width / 2)
+         writeIORef ballPosYRef (fromIntegral height / 2)
+         writeIORef ballDirXRef (abs ballDirX)
+         writeIORef ballDirYRef 0
   
   -- hit right wall
-  if ballPosX > (fromIntegral width)
-    then do 
-      -- add score_left
-      modifyIORef leftScoreRef (+ 1)
-      writeIORef ballPosXRef ((fromIntegral width) / 2)
-      writeIORef ballPosYRef ((fromIntegral height) / 2)
-      writeIORef ballDirXRef (negate . abs $ ballDirX)
-      writeIORef ballDirYRef 0
-    else return ()
+  when (ballPosX > fromIntegral width)
+    $ do modifyIORef leftScoreRef (+ 1)
+         writeIORef ballPosXRef (fromIntegral width / 2)
+         writeIORef ballPosYRef (fromIntegral height / 2)
+         writeIORef ballDirXRef (negate . abs $ ballDirX)
+         writeIORef ballDirYRef 0
   
   -- hit the top wall
-  if ballPosY > (fromIntegral height)
-    then writeIORef ballDirYRef (negate . abs $ ballDirY)
-    else return ()
+  when (ballPosY > fromIntegral height)
+    $ writeIORef ballDirYRef (negate . abs $ ballDirY)
     
   -- hit the bottom wall
-  if ballPosY < 0
-    then writeIORef ballDirYRef (abs ballDirY)
-    else return ()
+  when (ballPosY < 0) $ writeIORef ballDirYRef (abs ballDirY)
   
   -- vec2Norm ballPosXRef ballPosYRef
   
   drawRect ballPosX ballPosY ballSize ballSize
   glFlush
 
-
-
 -- set a vector's lenght to 1 (x + y == 1)
 vec2Norm :: IORef GLfloat -> IORef GLfloat -> IO ()
 vec2Norm xRef yRef = do
   x <- readIORef xRef
   y <- readIORef yRef
-  let len = sqrt $ ((x ** 2) + (y ** 2))
-  case len /= 0 of
-    True -> do 
-      let nLen = 1 / len
-      modifyIORef xRef (* nLen)
-      modifyIORef yRef (* nLen)
-    _    -> return ()
-
-
--- width :: Int
--- width = 1200
-
--- height :: Int
--- height = 500
+  let len = sqrt ((x ** 2) + (y ** 2))
+  when
+    (len /= 0)
+    (do let nLen = 1 / len
+        modifyIORef xRef (* nLen)
+        modifyIORef yRef (* nLen))
 
 racketWidth :: GLfloat
 racketWidth = 10
@@ -193,7 +164,7 @@ shutdown :: GLFW.WindowCloseCallback
 shutdown win = do
   GLFW.destroyWindow win
   GLFW.terminate
-  _ <- exitWith ExitSuccess
+  _ <- exitSuccess
   return ()
 
 
@@ -209,25 +180,23 @@ isPressed _ = False
 mainMenuReadKeys :: IORef Scene -> GLFW.Window -> IO ()
 mainMenuReadKeys sceneRef win = do
   enter <- GLFW.getKey win GLFW.Key'Enter
-  if isPressed enter then writeIORef sceneRef Game else return ()
-  return ()
-  
+  when (isPressed enter) $ writeIORef sceneRef Game
 
 readMultipleKeys :: GLfloat -> IORef GLfloat -> IORef GLfloat -> GLFW.Window -> IO ()
 readMultipleKeys height racketLeftYRef racketRightYRef win = do
   -- left
   w <- GLFW.getKey win GLFW.Key'W
-  if isPressed w then moveRacketUp height racketLeftYRef else return ()
+  when (isPressed w) $ moveRacketUp height racketLeftYRef
   
   s <- GLFW.getKey win GLFW.Key'S
-  if isPressed s then moveRacketDown racketLeftYRef else return ()
+  when (isPressed s) $ moveRacketDown racketLeftYRef
     
   -- right
   i <- GLFW.getKey win GLFW.Key'I
-  if isPressed i then moveRacketUp height racketRightYRef else return ()
+  when (isPressed i) $ moveRacketUp height racketRightYRef
   
   k <- GLFW.getKey win GLFW.Key'K
-  if isPressed k then moveRacketDown racketRightYRef else return ()
+  when (isPressed k) $ moveRacketDown racketRightYRef
 
 moveRacketUp :: GLfloat -> IORef GLfloat -> IO ()
 moveRacketUp height racketYRef = do
@@ -286,13 +255,13 @@ main = do
      
      racketLeftYRef  <- newIORef 50
      racketRightYRef <- newIORef 50
-     ballPosXRef     <- newIORef ((fromIntegral width) / 2)
-     ballPosYRef     <- newIORef ((fromIntegral height) / 2)
+     ballPosXRef     <- newIORef (fromIntegral width / 2)
+     ballPosYRef     <- newIORef (fromIntegral height / 2)
      ballDirXRef     <- newIORef (-1)
-     ballDirYRef     <- newIORef (0)
-     leftScoreRef    <- newIORef (0) :: IO (IORef Int)
-     rightScoreRef   <- newIORef (0) :: IO (IORef Int)
-     let racketRightX = (fromIntegral width) - racketWidth - 10
+     ballDirYRef     <- newIORef 0
+     leftScoreRef    <- newIORef 0 :: IO (IORef Int)
+     rightScoreRef   <- newIORef 0 :: IO (IORef Int)
+     let racketRightX = fromIntegral width - racketWidth - 10
      let gameState = 
            GameState
              racketLeftYRef
@@ -335,13 +304,11 @@ main = do
          Game -> do
            readMultipleKeys (fromIntegral height) racketLeftYRef racketRightYRef win           
            drawGameScene gameState win
-           leftScore  <- readIORef $ leftScoreRef
-           rightScore <- readIORef $ rightScoreRef
-           drawText font ((show leftScore) ++ ":" ++ (show rightScore)) ((((fromIntegral width) / 2) - 20), ((fromIntegral height) - 50)) (1,1,1)
+           leftScore  <- readIORef leftScoreRef
+           rightScore <- readIORef rightScoreRef
+           drawText font (show leftScore ++ ":" ++ show rightScore) ((fromIntegral width / 2) - 20, fromIntegral height - 50) (1,1,1)
            glColor4f 1 1 1 1
            
-
-       -- threadDelay 100000
        GLFW.swapBuffers win
 
 
