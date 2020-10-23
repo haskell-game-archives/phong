@@ -1,5 +1,3 @@
 resolver: nightly-2020-10-18 # ghc-8.10.2
-packages:
-- '.'
 extra-deps:
 - FTGL-2.1@sha256:299c20bb73653bf7047e3103375aac800653eb6b0dc9e69aaf3e1ac3180ce8ca,842
